@@ -24,7 +24,7 @@ export default function SignupPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: name } },
@@ -37,6 +37,12 @@ export default function SignupPage() {
       return
     }
 
+    // If email confirmation is enabled, session will be null — show message instead
+    if (!data.session) {
+      setErrors({ general: "Please check your email to confirm your account, then sign in." })
+      return
+    }
+
     router.push("/onboarding")
   }
 
@@ -45,7 +51,7 @@ export default function SignupPage() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: `${window.location.origin}/api/auth/callback?next=/onboarding`,
       },
     })
   }
@@ -67,7 +73,9 @@ export default function SignupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="name"
+              suppressHydrationWarning
+              className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Jane Doe"
             />
             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -83,7 +91,9 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="email"
+              suppressHydrationWarning
+              className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="jane@example.com"
             />
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
@@ -100,7 +110,9 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoComplete="new-password"
+              suppressHydrationWarning
+              className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Min. 8 characters"
             />
             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
@@ -111,6 +123,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
+            suppressHydrationWarning
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg px-4 py-2 font-medium text-sm transition-colors"
           >
             {loading ? "Creating account…" : "Create account"}
@@ -128,6 +141,7 @@ export default function SignupPage() {
 
         <button
           onClick={handleGoogleSignup}
+          suppressHydrationWarning
           className="w-full flex items-center justify-center gap-3 border rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
