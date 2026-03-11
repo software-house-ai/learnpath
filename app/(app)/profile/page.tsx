@@ -67,6 +67,17 @@ export default async function ProfilePage() {
               <span className="text-sm text-gray-900 capitalize">{profile?.role ?? "user"}</span>
             </div>
           </div>
+
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <form action="/api/auth/signout" method="POST">
+              <button
+                type="submit"
+                className="w-full border border-red-200 text-red-600 hover:bg-red-50 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
