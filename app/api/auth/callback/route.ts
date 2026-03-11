@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
@@ -8,8 +9,7 @@ export async function GET(request: Request) {
   const errorDescription = searchParams.get("error_description")
   const next = searchParams.get("next") ?? "/dashboard"
 
-  // OAuth provider returned an error (e.g. user denied access, or Supabase
-  // failed to exchange the code with the provider)
+  // OAuth provider returned an error (e.g. user denied access)
   if (error) {
     const loginUrl = new URL("/login", origin)
     loginUrl.searchParams.set("error", errorDescription ?? error)
@@ -17,7 +17,33 @@ export async function GET(request: Request) {
   }
 
   if (code) {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+
+    // Build the redirect response FIRST so we can attach Set-Cookie headers
+    // to it. Using cookies() alone (next/headers) does NOT automatically
+    // propagate cookie writes to a NextResponse.redirect() response.
+    const redirectUrl = new URL(next, origin)
+    const response = NextResponse.redirect(redirectUrl)
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            // Write cookies onto the actual redirect response so the browser
+            // receives the session immediately after the OAuth exchange.
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError) {
@@ -26,7 +52,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(loginUrl)
     }
 
-    return NextResponse.redirect(new URL(next, origin))
+    return response
   }
 
   // No code and no error — something unexpected
