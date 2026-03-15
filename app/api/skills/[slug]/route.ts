@@ -4,9 +4,10 @@ import type { ApiError } from "@/types/api"
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await params
     const supabase = await createClient()
 
     const { data: skill, error } = await supabase
@@ -21,7 +22,7 @@ export async function GET(
           skills!prerequisite_skill_id(id, name, slug)
         )
       `)
-      .eq("slug", params.slug)
+      .eq("slug", slug)
       .eq("is_published", true)
       .single()
 
