@@ -100,7 +100,8 @@ export default function AdminDomainsPage() {
         .single()
 
       if (profile?.role !== 'admin') {
-        router.replace('/dashboard')
+        await supabase.auth.signOut()
+        router.replace('/login')
         return
       }
 
