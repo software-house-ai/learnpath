@@ -39,7 +39,7 @@ export async function GET() {
     // Transform data to flatten skills
     const transformedGoals = goals.map(goal => ({
       ...goal,
-      skills: goal.goal_skills.map((gs: any) => gs.skills)
+      skills: goal.goal_skills.map((gs: { skills: unknown }) => gs.skills)
     }))
 
     return NextResponse.json({ data: transformedGoals })

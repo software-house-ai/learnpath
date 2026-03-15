@@ -82,10 +82,10 @@ export async function PUT(
     }
 
     return NextResponse.json<ApiSuccess<Skill>>({ data: updatedSkill })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating skill:', error)
     return NextResponse.json<ApiError>(
-      { error: { code: 'INTERNAL_ERROR', message: error.message || 'Something went wrong' } },
+      { error: { code: 'INTERNAL_ERROR', message: error instanceof Error ? error.message : 'Something went wrong' } },
       { status: 500 }
     )
   }
@@ -147,10 +147,10 @@ export async function DELETE(
     if (skillError) throw skillError
 
     return NextResponse.json<ApiSuccess<{ deleted: boolean }>>({ data: { deleted: true } })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting skill:', error)
     return NextResponse.json<ApiError>(
-      { error: { code: 'INTERNAL_ERROR', message: error.message || 'Something went wrong' } },
+      { error: { code: 'INTERNAL_ERROR', message: error instanceof Error ? error.message : 'Something went wrong' } },
       { status: 500 }
     )
   }

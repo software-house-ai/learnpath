@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import type { ApiSuccess, ApiError, Skill } from '@/types/api'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient()
 
@@ -45,28 +45,28 @@ export async function GET(request: NextRequest) {
     if (error) throw error
 
     // Transform and sort the data locally to match the required format
-    const transformedData = data.map((skill: any) => ({
+    const transformedData = data.map((skill: { domains?: { name?: string }, skill_prerequisites?: { prerequisite?: { id: string, name: string }, strength: string }[], [key: string]: unknown }) => ({
       ...skill,
       domain_name: skill.domains?.name || null,
-      prerequisites: skill.skill_prerequisites?.map((sp: any) => ({
+      prerequisites: skill.skill_prerequisites?.map((sp) => ({
         id: sp.prerequisite?.id,
         name: sp.prerequisite?.name,
         strength: sp.strength
       })) || []
-    })).sort((a, b) => {
+    })).sort((a: { domain_name?: string | null, difficulty?: unknown }, b: { domain_name?: string | null, difficulty?: unknown }) => {
       const nameA = a.domain_name || ''
       const nameB = b.domain_name || ''
       if (nameA !== nameB) {
         return nameA.localeCompare(nameB)
       }
-      return (a.difficulty || 0) - (b.difficulty || 0)
+      return (Number(a.difficulty) || 0) - (Number(b.difficulty) || 0)
     })
 
-    return NextResponse.json<ApiSuccess<any>>({ data: transformedData })
-  } catch (error: any) {
+    return NextResponse.json({ data: transformedData })
+  } catch (error: unknown) {
     console.error('Error fetching skills:', error)
     return NextResponse.json<ApiError>(
-      { error: { code: 'INTERNAL_ERROR', message: error.message || 'Something went wrong' } },
+      { error: { code: 'INTERNAL_ERROR', message: error instanceof Error ? error.message : 'Something went wrong' } },
       { status: 500 }
     )
   }
@@ -166,10 +166,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json<ApiSuccess<Skill>>({ data: newSkill }, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating skill:', error)
     return NextResponse.json<ApiError>(
-      { error: { code: 'INTERNAL_ERROR', message: error.message || 'Something went wrong' } },
+      { error: { code: 'INTERNAL_ERROR', message: error instanceof Error ? error.message : 'Something went wrong' } },
       { status: 500 }
     )
   }

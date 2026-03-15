@@ -259,7 +259,7 @@ export default function AdminGoalsPage() {
             <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
               <h3 className="text-lg font-bold">Delete Goal</h3>
               <p className="mt-2 text-sm text-gray-600">
-                Are you sure you want to delete "{deleteConfirm.title}"? This cannot be undone.
+                Are you sure you want to delete &quot;{deleteConfirm.title}&quot;? This cannot be undone.
               </p>
               <div className="mt-6 flex justify-end gap-3">
                 <button
