@@ -5,13 +5,26 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import GoalSelector from "@/components/onboarding/GoalSelector"
 import ExperienceStep from "@/components/onboarding/ExperienceStep"
+import AssessmentStep from "@/components/onboarding/AssessmentStep"
+import ContextStep, { OnboardingContext } from "@/components/onboarding/ContextStep"
+import type { AssessedLevel } from "@/types/api"
 
 export default function OnboardingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
   const [experienceLevel, setExperienceLevel] = useState<string | null>(null)
+  
+  const [assessments, setAssessments] = useState<Record<string, AssessedLevel>>({})
+  const [contextData, setContextData] = useState<OnboardingContext>({
+    hours_per_week: 7,
+    deadline: null,
+    reason: ""
+  })
+  
   const [sessionChecked, setSessionChecked] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -41,9 +54,42 @@ export default function OnboardingPage() {
     }
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     if (currentStep < 4) {
       setCurrentStep((s) => (s + 1) as 1 | 2 | 3 | 4)
+    } else {
+      await submitOnboarding()
+    }
+  }
+
+  async function submitOnboarding() {
+    if (!selectedGoalId) return
+    setIsSubmitting(true)
+    setError(null)
+    
+    try {
+      const res = await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal_id: selectedGoalId,
+          assessment_results: assessments,
+          context: contextData
+        })
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error?.message || "Failed to generate path")
+      }
+
+      await res.json()
+      // redirect to dashboard where path will be visible
+      router.push("/dashboard")
+    } catch (err: unknown) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : "Something went wrong")
+      setIsSubmitting(false)
     }
   }
 
@@ -57,13 +103,17 @@ export default function OnboardingPage() {
             {([1, 2, 3, 4] as const).map((step) => (
               <div
                 key={step}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  step <= currentStep ? "bg-blue-600" : "bg-gray-200"
-                }`}
+                className={"h-1.5 flex-1 rounded-full transition-colors " + (step <= currentStep ? "bg-blue-600" : "bg-gray-200")}
               />
             ))}
           </div>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+            {error}
+          </div>
+        )}
 
         {/* Step content */}
         <div className="mb-8">
@@ -74,23 +124,27 @@ export default function OnboardingPage() {
             <ExperienceStep onSelect={setExperienceLevel} selected={experienceLevel} />
           )}
           {currentStep === 3 && (
-            <div className="text-center py-16 text-gray-500 text-lg">
-              Assessment coming soon
-            </div>
+            <AssessmentStep 
+              goalId={selectedGoalId} 
+              assessments={assessments} 
+              onChange={setAssessments} 
+            />
           )}
           {currentStep === 4 && (
-            <div className="text-center py-16 text-gray-500 text-lg">
-              Context form coming soon
-            </div>
+            <ContextStep 
+              context={contextData} 
+              onChange={setContextData} 
+            />
           )}
         </div>
 
         {/* Navigation */}
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           {currentStep > 1 ? (
             <button
               onClick={handleBack}
-              className="border rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              disabled={isSubmitting}
+              className="border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
             >
               Back
             </button>
@@ -99,10 +153,17 @@ export default function OnboardingPage() {
           )}
           <button
             onClick={handleContinue}
-            disabled={!canContinue}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg px-6 py-2 text-sm font-medium transition-colors"
+            disabled={!canContinue || isSubmitting}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg px-6 py-2 text-sm font-medium transition-colors flex items-center gap-2"
           >
-            {currentStep === 4 ? "Finish" : "Continue"}
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                Generating Path...
+              </>
+            ) : (
+              currentStep === 4 ? "Finish" : "Continue"
+            )}
           </button>
         </div>
       </div>

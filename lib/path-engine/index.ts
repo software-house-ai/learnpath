@@ -165,7 +165,7 @@ export async function generatePath(input: PathInput): Promise<PathOutput> {
     week_number: m.week_number,
     estimated_hours: m.estimated_hours,
     checkpoint_passed: false,
-    unlock_condition: null,
+    unlock_condition: {},
   }))
 
   const { data: insertedModules, error: modulesError } = await supabase

@@ -86,26 +86,28 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+    <div className="min-h-screen bg-gray-50 text-gray-900 w-full pb-12">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
 
-      <div className="mb-6">
-        <NextUpCard
-          nextContent={dashboardData.active_paths[0]?.next_content || null}
-          pathId={dashboardData.active_paths[0]?.path_id || ""}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2">
-          <ProgressOverview paths={dashboardData.active_paths} />
+        <div className="mb-8">
+          <NextUpCard
+            nextContent={dashboardData.active_paths[0]?.next_content || null}
+            pathId={dashboardData.active_paths[0]?.path_id || ""}
+          />
         </div>
-        <div>
-          <StreakCard streak={dashboardData.streak} />
-        </div>
-      </div>
 
-      <SkillRadarChart skillProgress={dashboardData.skill_progress} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          <div className="lg:col-span-2">
+            <ProgressOverview paths={dashboardData.active_paths} />
+          </div>
+          <div>
+            <StreakCard streak={dashboardData.streak} />
+          </div>
+        </div>
+
+<SkillRadarChart skillProgress={dashboardData.skill_progress} />
+      </div>
     </div>
   )
 }

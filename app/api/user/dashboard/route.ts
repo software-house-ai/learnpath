@@ -165,7 +165,7 @@ export async function GET() {
         id: string
         status: string
         skill_id: string | null
-        skills: Array<{ name: string }> | null
+        skills: { name: string } | null
       }>
 
       // Group by skill
@@ -175,8 +175,8 @@ export async function GET() {
       >()
 
       for (const mod of modules) {
-        if (!mod.skill_id || !mod.skills || mod.skills.length === 0) continue
-        const skillName = mod.skills[0].name
+        if (!mod.skill_id || !mod.skills || !mod.skills.name) continue
+        const skillName = mod.skills.name
         const existing = skillMap.get(mod.skill_id) ?? {
           name: skillName,
           total: 0,
