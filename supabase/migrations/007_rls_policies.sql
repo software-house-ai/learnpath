@@ -153,9 +153,9 @@ create policy "Users can manage their own paths"
   on paths for all
   using (auth.uid() = user_id);
 
--- PATH MODULES: users can view modules belonging to their paths
-create policy "Users can view their own path modules"
-  on path_modules for select
+-- PATH MODULES: users manage their own path modules
+  create policy "Users can manage their own path modules"
+    on path_modules for all
   using (
     exists (
       select 1 from paths
@@ -164,19 +164,9 @@ create policy "Users can view their own path modules"
     )
   );
 
-create policy "Users can update their own path modules"
-  on path_modules for update
-  using (
-    exists (
-      select 1 from paths
-      where paths.id = path_modules.path_id
-      and paths.user_id = auth.uid()
-    )
-  );
-
--- PATH CONTENT ASSIGNMENTS: users can view their own
-create policy "Users can view their own content assignments"
-  on path_content_assignments for select
+-- PATH CONTENT ASSIGNMENTS: users manage their own
+  create policy "Users can manage their own content assignments"
+    on path_content_assignments for all
   using (
     exists (
       select 1 from path_modules

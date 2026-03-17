@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "stitch": {
+      "type": "stdio",
+      "command": "C:\\Users\\User\\AppData\\Roaming\\npm\\stitch-mcp.cmd",
+      "args": ["proxy"],
+      "env": {
+        "STITCH_API_KEY": "AQ.Ab8RN6KmWHQS80FgR1RVxMqlP_3bjgzQ-nUTf-9MNoyvhhB3BQ"
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import type { AssessedLevel } from "@/types/api"
 import type { PathInput, PathOutput, SkillWithLevels } from "./types"
 import { PathGenerationError } from "./errors"
@@ -6,7 +6,7 @@ import { loadPrerequisiteGraph, topologicalSort } from "./graph"
 import { selectContent, getDifficultyLevelsForAssessment } from "./content-selector"
 
 export async function generatePath(input: PathInput): Promise<PathOutput> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // ── STEP 1: Load goal skills ──────────────────────────────────────────────
   const { data: goalSkills, error: gsError } = await supabase
