@@ -172,7 +172,6 @@ export default function PlayerPage() {
             {content.content_type === "video" && content.embed_url ? (
               <VideoEmbed
                 embedUrl={content.embed_url}
-                contentItemId={contentId}
                 durationMinutes={content.duration_minutes || 0}
                 initialPositionSeconds={content.user_progress?.last_position_seconds || 0}
                 onProgressUpdate={handleProgressUpdate}
@@ -216,7 +215,6 @@ export default function PlayerPage() {
       <PlayerControls
         pathId={pathId}
         moduleId={moduleId}
-        contentId={contentId}
         moduleTitle="Module Title"
         contentTitle={content.title}
         currentIndex={currentIndex || 1}

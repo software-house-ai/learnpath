@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 
 // ─── Mock Supabase server client ──────────────────────────────────────────────
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }))
 
 // ─── Base chainable mock builder ──────────────────────────────────────────────
@@ -58,8 +58,8 @@ describe("generatePath edge cases", () => {
   })
 
   it("TEST 6: goal with no skills → throws error with correct message", async () => {
-    const { createClient } = await import("@/lib/supabase/server")
-    vi.mocked(createClient).mockResolvedValue(
+    const { createAdminClient } = await import("@/lib/supabase/server")
+    vi.mocked(createAdminClient).mockReturnValue(
       buildMock({
         goal_skills: makeChainable({ data: [], error: null }),
       }) as never
@@ -77,8 +77,8 @@ describe("generatePath edge cases", () => {
   })
 
   it("TEST 5: existing active path → returns existing path_id with warning", async () => {
-    const { createClient } = await import("@/lib/supabase/server")
-    vi.mocked(createClient).mockResolvedValue(
+    const { createAdminClient } = await import("@/lib/supabase/server")
+    vi.mocked(createAdminClient).mockReturnValue(
       buildMock({
         goal_skills: goalSkillsMock([{ skill_id: "s1", display_order: 1, is_core: true }]),
         skill_prerequisites: prereqMock([]),
@@ -99,8 +99,8 @@ describe("generatePath edge cases", () => {
   })
 
   it("TEST 4: hours_per_week = 0 → defaults to 7, estimated_weeks > 0", async () => {
-    const { createClient } = await import("@/lib/supabase/server")
-    vi.mocked(createClient).mockResolvedValue(
+    const { createAdminClient } = await import("@/lib/supabase/server")
+    vi.mocked(createAdminClient).mockReturnValue(
       buildMock({
         goal_skills: goalSkillsMock([{ skill_id: "s1", display_order: 1, is_core: true }]),
         skill_prerequisites: prereqMock([]),
@@ -116,27 +116,27 @@ describe("generatePath edge cases", () => {
     const insertMock = {
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: pathInsertResult, error: null }),
+          single: vi.fn().mockReturnValue({ data: pathInsertResult, error: null }),
         }),
       }),
     }
     const moduleInsertMock = {
       insert: vi.fn().mockReturnValue({
-        select: vi.fn().mockResolvedValue({ data: [{ id: "mod-1", module_order: 1 }], error: null }),
+        select: vi.fn().mockReturnValue({ data: [{ id: "mod-1", module_order: 1 }], error: null }),
       }),
       update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
+        eq: vi.fn().mockReturnValue({ error: null }),
       }),
     }
 
-    vi.mocked(createClient).mockResolvedValue({
+    vi.mocked(createAdminClient).mockReturnValue({
       from: vi.fn((table: string) => {
         if (table === "goal_skills") return goalSkillsMock([{ skill_id: "s1", display_order: 1, is_core: true }])
         if (table === "skill_prerequisites") return prereqMock([])
         if (table === "paths") return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+          single: vi.fn().mockReturnValue({ data: null, error: null }),
           ...insertMock,
         }
         if (table === "content_items") return makeChainable({ data: [], error: null })
