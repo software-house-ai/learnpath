@@ -54,7 +54,7 @@ export default function DashboardPage() {
         }
         const data = await res.json()
         setDashboardData(data.data)
-      } catch (err) {
+      } catch {
         setError("Error loading dashboard data")
       } finally {
         setIsLoading(false)

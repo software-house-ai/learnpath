@@ -59,7 +59,7 @@ export default function PlayerPage() {
           const modRes = await fetch(`/api/paths/${pathId}/modules/${moduleId}/contents`)
           const modData = await modRes.json()
           mList = modData.data || []
-        } catch(e) {}
+        } catch {}
         
         if (mList.length === 0 && data.data) {
           mList = [{ id: contentId, title: data.data.title }]

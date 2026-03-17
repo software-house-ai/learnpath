@@ -33,7 +33,10 @@ export function NextUpCard({ nextContent, pathId, moduleId }: NextUpCardProps) {
       <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Up Next</p>
       <div className="flex gap-4 items-start">
         {nextContent.thumbnail_url && (
-          <img src={nextContent.thumbnail_url} className="w-24 h-16 rounded object-cover" alt="Thumbnail" />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={nextContent.thumbnail_url} className="w-24 h-16 rounded object-cover" alt="Thumbnail" />
+          </>
         )}
         <div className="flex-1">
           <p className="text-xs text-blue-600 mb-1">{nextContent.module_title}</p>

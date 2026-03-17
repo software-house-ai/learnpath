@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -89,7 +89,7 @@ export default function SignupPage() {
               Unlock your potential with <span className="text-blue-600">AI-driven</span> growth.
             </h1>
             <p className="text-lg text-gray-600 leading-relaxed mb-8">
-              The world's first AI-powered personal learning operating system designed to adapt to how you learn best.
+              The world&apos;s first AI-powered personal learning operating system designed to adapt to how you learn best.
             </p>
             <div className="grid grid-cols-2 gap-4 text-left">
               <div className="p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white">

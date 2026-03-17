@@ -4,27 +4,27 @@ import { useRouter } from "next/navigation"
 interface PlayerControlsProps {
   pathId: string
   moduleId: string
-  contentId: string
+  _contentId?: string
   moduleTitle: string
   contentTitle: string
   currentIndex: number
   totalInModule: number
   prevContentId: string | null
   nextContentId: string | null
-  onComplete?: () => void
+  _onComplete?: () => void
 }
 
 export default function PlayerControls({
   pathId,
   moduleId,
-  contentId,
+
   moduleTitle,
   contentTitle,
   currentIndex,
   totalInModule,
   prevContentId,
   nextContentId,
-  onComplete
+
 }: PlayerControlsProps) {
   const router = useRouter()
   const prevHref = prevContentId ? `/paths/${pathId}/learn/${moduleId}/${prevContentId}` : null

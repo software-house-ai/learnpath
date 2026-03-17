@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 
 interface VideoEmbedProps {
   embedUrl: string
-  contentItemId: string
+  _contentItemId?: string
   durationMinutes: number
   initialPositionSeconds: number
   onProgressUpdate: (percent: number, seconds: number) => void
@@ -18,7 +18,6 @@ function formatTime(seconds: number): string {
 
 export default function VideoEmbed({
   embedUrl,
-  contentItemId,
   durationMinutes,
   initialPositionSeconds,
   onProgressUpdate,
@@ -52,7 +51,6 @@ export default function VideoEmbed({
   }, [isActive, durationMinutes, onProgressUpdate])
 
   const handleMarkComplete = () => {
-    const totalSeconds = (durationMinutes || 10) * 60
     onProgressUpdate(100, secondsWatched)
     onMarkComplete()
   }

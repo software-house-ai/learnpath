@@ -1,6 +1,5 @@
 "use client"
 import { useState } from "react"
-import type { ApiSuccess, ApiError } from "@/types/api"
 
 export interface CheckpointQuestion {
   question_id: string

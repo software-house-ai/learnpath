@@ -1,0 +1,16 @@
+
+D:\University\CS 2024-2028\SP\Software House\learnpath\app\(app)\paths\[pathId]\learn\[moduleId]\[contentId]\page.tsx
+  62:17  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\University\CS 2024-2028\SP\Software House\learnpath\components\dashboard\NextUpCard.tsx
+  37:15  error  Parsing error: ')' expected
+
+D:\University\CS 2024-2028\SP\Software House\learnpath\components\player\PlayerControls.tsx
+  14:0  error  Parsing error: Property or signature expected
+
+D:\University\CS 2024-2028\SP\Software House\learnpath\components\player\VideoEmbed.tsx
+  21:3   warning  'contentItemId' is defined but never used          @typescript-eslint/no-unused-vars
+  55:11  warning  'totalSeconds' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (2 errors, 3 warnings)
+

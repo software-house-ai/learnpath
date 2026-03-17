@@ -15,13 +15,9 @@ function formatDate(dateStr: string): string {
 }
 
 export default function PathCard({
-  pathId,
   goalTitle,
   completionPercent,
   estimatedCompletionDate,
-  nextContentId,
-  nextModuleId,
-  nextPathId
 }: PathCardProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -38,3 +34,4 @@ export default function PathCard({
     </div>
   )
 }
+
