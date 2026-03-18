@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
 import { DifficultyLevel } from "@/types/api"
 
 export interface AssessmentQuestion {
@@ -14,18 +13,12 @@ export async function generateAssessmentQuestion(
   skillName: string,
   difficulty: DifficultyLevel
 ): Promise<AssessmentQuestion> {
-  // If GEMINI_API_KEY is missing, return fallback immediately
-  if (!process.env.GEMINI_API_KEY) {
+  const groqApiKey = process.env.GROQ_API_KEY
+  if (!groqApiKey) {
     return generateFallbackQuestion(skillName, difficulty)
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      generationConfig: { temperature: 0 } // temperature=0 for consistency
-    })
-
     const prompt = `You are a technical skill assessor for ${skillName}.
 Generate ONE multiple choice question at ${difficulty} level.
 Return ONLY valid JSON in this exact format with no other text:
@@ -38,12 +31,64 @@ Return ONLY valid JSON in this exact format with no other text:
 The question should test practical knowledge, not trivia.
 Do not include any markdown, backticks, or text outside the JSON.`
 
-    const result = await model.generateContent(prompt)
-    const text = result.response.text().trim()
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${groqApiKey}`
+      },
+      body: JSON.stringify({
+        model: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
+        temperature: 0,
+        messages: [
+          {
+            role: "system",
+            content: "You generate concise and valid JSON only."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      })
+    })
+
+    if (!response.ok) {
+      const errBody = await response.text()
+      throw new Error(`Groq API error ${response.status}: ${errBody}`)
+    }
+
+    const payload = await response.json() as {
+      choices?: Array<{
+        message?: {
+          content?: string
+        }
+      }>
+    }
+
+    const text = payload.choices?.[0]?.message?.content?.trim()
+    if (!text) {
+      throw new Error("Groq API returned empty content")
+    }
 
     // Strip any markdown code fences if present
     const clean = text.replace(/```json|```/g, "").trim()
-    const parsed = JSON.parse(clean)
+    const parsed = JSON.parse(clean) as {
+      question?: string
+      options?: string[]
+      correct_index?: number
+      explanation?: string
+    }
+
+    if (
+      !parsed.question ||
+      !Array.isArray(parsed.options) ||
+      parsed.options.length !== 4 ||
+      typeof parsed.correct_index !== "number" ||
+      typeof parsed.explanation !== "string"
+    ) {
+      throw new Error("Invalid question format returned by Groq")
+    }
 
     return {
       id: crypto.randomUUID(),
@@ -53,7 +98,7 @@ Do not include any markdown, backticks, or text outside the JSON.`
       explanation: parsed.explanation
     }
   } catch (error) {
-    console.error("Gemini API failed, using fallback:", error)
+    console.error("Groq API failed, using fallback:", error)
     return generateFallbackQuestion(skillName, difficulty)
   }
 }
