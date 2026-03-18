@@ -1,29 +1,49 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import GoalSelector from "@/components/onboarding/GoalSelector"
 import ExperienceStep from "@/components/onboarding/ExperienceStep"
-import AssessmentStep from "@/components/onboarding/AssessmentStep"
-import ContextStep, { OnboardingContext } from "@/components/onboarding/ContextStep"
+import AssessmentQuestion from "@/components/onboarding/AssessmentQuestion"
+import SkillMapResult from "@/components/onboarding/SkillMapResult"
+import ContextForm from "@/components/onboarding/ContextForm"
 import type { AssessedLevel } from "@/types/api"
+
+interface AssessmentQuestionData {
+  id: string
+  question: string
+  options: string[]
+  correct_index: number
+  is_fallback?: boolean
+}
+
+interface ContextData {
+  hours_per_week: number
+  deadline: string | null
+  reason: string
+}
 
 export default function OnboardingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
+  const [selectedGoalTitle, setSelectedGoalTitle] = useState<string>("")
   const [experienceLevel, setExperienceLevel] = useState<string | null>(null)
-  
-  const [assessments, setAssessments] = useState<Record<string, AssessedLevel>>({})
-  const [contextData, setContextData] = useState<OnboardingContext>({
-    hours_per_week: 7,
-    deadline: null,
-    reason: ""
-  })
-  
+
+  // Step 3 - Assessment state
+  const [assessmentSessionId, setAssessmentSessionId] = useState<string | null>(null)
+  const [currentQuestion, setCurrentQuestion] = useState<AssessmentQuestionData | null>(null)
+  const [currentSkillName, setCurrentSkillName] = useState("")
+  const [currentSkillIndex, setCurrentSkillIndex] = useState(0)
+  const [totalSkills, setTotalSkills] = useState(0)
+  const [assessmentResults, setAssessmentResults] = useState<Record<string, AssessedLevel>>({})
+  const [skillMapData, setSkillMapData] = useState<Record<string, { skill_name: string; assessed_level: AssessedLevel; confidence_score: number }> | null>(null)
+  const [isAssessmentComplete, setIsAssessmentComplete] = useState(false)
+
+  // Common state
   const [sessionChecked, setSessionChecked] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -37,6 +57,168 @@ export default function OnboardingPage() {
     })
   }, [router])
 
+  const startAssessment = useCallback(async () => {
+    if (!selectedGoalId) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch("/api/assessment/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal_id: selectedGoalId })
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error?.message || "Failed to start assessment")
+      }
+
+      const { data } = await res.json()
+
+      if (data.assessment_complete) {
+        setIsAssessmentComplete(true)
+        return
+      }
+
+      setAssessmentSessionId(data.session_id)
+      setCurrentQuestion(data.question)
+      setCurrentSkillName(data.current_skill_name)
+      setCurrentSkillIndex(data.current_skill_index)
+      setTotalSkills(data.total_skills)
+    } catch (err: unknown) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : "Failed to start assessment")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [selectedGoalId])
+
+  // Start assessment when entering Step 3
+  useEffect(() => {
+    if (currentStep === 3 && !assessmentSessionId && selectedGoalId && !isAssessmentComplete) {
+      startAssessment()
+    }
+  }, [currentStep, selectedGoalId, assessmentSessionId, isAssessmentComplete, startAssessment])
+
+  async function handleAnswer(answerIndex: number, confidence: string) {
+    if (!assessmentSessionId || !currentQuestion) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch("/api/assessment/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: assessmentSessionId,
+          question_id: currentQuestion.id,
+          answer_index: answerIndex,
+          confidence
+        })
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error?.message || "Failed to submit answer")
+      }
+
+      const { data } = await res.json()
+
+      if (data.assessment_complete) {
+        // Save results and show skill map
+        await saveAssessmentResults(data.results, assessmentSessionId)
+      } else {
+        // Show next question
+        setCurrentQuestion(data.question)
+        setCurrentSkillName(data.current_skill_name)
+        setCurrentSkillIndex(data.current_skill_index)
+      }
+    } catch (err: unknown) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : "Failed to submit answer")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function saveAssessmentResults(results: Record<string, { assessed_level: AssessedLevel; confidence_score: number; responses?: Record<string, unknown>[] }>, sessionId: string) {
+    try {
+      const res = await fetch("/api/assessment/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, results })
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error?.message || "Failed to save results")
+      }
+
+      await res.json()
+
+      // Transform results for display and storage
+      const supabase = createClient()
+      const { data: skillsData } = await supabase
+        .from("skills")
+        .select("id, name")
+
+      const skillNameMap = new Map((skillsData || []).map((s: { id: string; name: string }) => [s.id, s.name]))
+
+      const levelResults: Record<string, AssessedLevel> = {}
+      const transformedResults: Record<string, { skill_name: string; assessed_level: AssessedLevel; confidence_score: number }> = {}
+      Object.entries(results).forEach(([skillId, result]: [string, { assessed_level: AssessedLevel; confidence_score: number }]) => {
+        levelResults[skillId] = result.assessed_level
+        transformedResults[skillId] = {
+          skill_name: skillNameMap.get(skillId) || skillId,
+          assessed_level: result.assessed_level,
+          confidence_score: result.confidence_score
+        }
+      })
+
+      setAssessmentResults(levelResults)
+      setSkillMapData(transformedResults)
+      setIsAssessmentComplete(true)
+    } catch (err: unknown) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : "Failed to save assessment")
+    }
+  }
+
+  async function handleContextSubmit(contextData: ContextData) {
+    if (!selectedGoalId) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal_id: selectedGoalId,
+          assessment_results: assessmentResults,
+          context: contextData
+        })
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error?.message || "Failed to complete onboarding")
+      }
+
+      const { data } = await res.json()
+      router.push(data.redirect_url)
+    } catch (err: unknown) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (!sessionChecked) {
     return null
   }
@@ -46,50 +228,25 @@ export default function OnboardingPage() {
       ? selectedGoalId !== null
       : currentStep === 2
         ? experienceLevel !== null
-        : true
+        : currentStep === 3
+          ? isAssessmentComplete
+          : true
 
   function handleBack() {
     if (currentStep > 1) {
+      if (currentStep === 3) {
+        setAssessmentSessionId(null)
+        setCurrentQuestion(null)
+        setIsAssessmentComplete(false)
+        setSkillMapData(null)
+      }
       setCurrentStep((s) => (s - 1) as 1 | 2 | 3 | 4)
     }
   }
 
-  async function handleContinue() {
+  function handleContinue() {
     if (currentStep < 4) {
       setCurrentStep((s) => (s + 1) as 1 | 2 | 3 | 4)
-    } else {
-      await submitOnboarding()
-    }
-  }
-
-  async function submitOnboarding() {
-    if (!selectedGoalId) return
-    setIsSubmitting(true)
-    setError(null)
-    
-    try {
-      const res = await fetch("/api/onboarding/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          goal_id: selectedGoalId,
-          assessment_results: assessments,
-          context: contextData
-        })
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error?.message || "Failed to generate path")
-      }
-
-      await res.json()
-      // redirect to dashboard where path will be visible
-      router.push("/dashboard")
-    } catch (err: unknown) {
-      console.error(err)
-      setError(err instanceof Error ? err.message : "Something went wrong")
-      setIsSubmitting(false)
     }
   }
 
@@ -103,7 +260,10 @@ export default function OnboardingPage() {
             {([1, 2, 3, 4] as const).map((step) => (
               <div
                 key={step}
-                className={"h-1.5 flex-1 rounded-full transition-colors " + (step <= currentStep ? "bg-blue-600" : "bg-gray-200")}
+                className={
+                  "h-1.5 flex-1 rounded-full transition-colors " +
+                  (step <= currentStep ? "bg-blue-600" : "bg-gray-200")
+                }
               />
             ))}
           </div>
@@ -118,54 +278,93 @@ export default function OnboardingPage() {
         {/* Step content */}
         <div className="mb-8">
           {currentStep === 1 && (
-            <GoalSelector onSelect={setSelectedGoalId} selectedGoalId={selectedGoalId} />
+            <GoalSelector
+              onSelect={(goalId, goalTitle) => {
+                setSelectedGoalId(goalId)
+                setSelectedGoalTitle(goalTitle || "")
+              }}
+              selectedGoalId={selectedGoalId}
+            />
           )}
           {currentStep === 2 && (
             <ExperienceStep onSelect={setExperienceLevel} selected={experienceLevel} />
           )}
           {currentStep === 3 && (
-            <AssessmentStep 
-              goalId={selectedGoalId} 
-              assessments={assessments} 
-              onChange={setAssessments} 
-            />
+            <>
+              {isLoading && !currentQuestion ? (
+                <div className="flex justify-center py-16">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p className="text-gray-600">Loading assessment...</p>
+                  </div>
+                </div>
+              ) : isAssessmentComplete && skillMapData ? (
+                <SkillMapResult
+                  results={skillMapData}
+                  goalTitle={selectedGoalTitle}
+                  onContinue={() => setCurrentStep(4)}
+                />
+              ) : currentQuestion ? (
+                <AssessmentQuestion
+                  question={currentQuestion}
+                  currentSkillName={currentSkillName}
+                  currentSkillIndex={currentSkillIndex}
+                  totalSkills={totalSkills}
+                  onAnswer={handleAnswer}
+                  isLoading={isLoading}
+                />
+              ) : null}
+            </>
           )}
           {currentStep === 4 && (
-            <ContextStep 
-              context={contextData} 
-              onChange={setContextData} 
+            <ContextForm
+              onSubmit={handleContextSubmit}
+              isLoading={isLoading}
             />
           )}
         </div>
 
         {/* Navigation */}
-        <div className="flex justify-between items-center">
-          {currentStep > 1 ? (
+        {currentStep < 3 && (
+          <div className="flex justify-between items-center">
+            {currentStep > 1 ? (
+              <button
+                onClick={handleBack}
+                disabled={isLoading}
+                className="border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                Back
+              </button>
+            ) : (
+              <div />
+            )}
+            <button
+              onClick={handleContinue}
+              disabled={!canContinue || isLoading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg px-6 py-2 text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Loading...
+                </>
+              ) : (
+                "Continue"
+              )}
+            </button>
+          </div>
+        )}
+        {currentStep === 3 && isAssessmentComplete && skillMapData && (
+          <div className="flex justify-between items-center">
             <button
               onClick={handleBack}
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
             >
               Back
             </button>
-          ) : (
-            <div />
-          )}
-          <button
-            onClick={handleContinue}
-            disabled={!canContinue || isSubmitting}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg px-6 py-2 text-sm font-medium transition-colors flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                Generating Path...
-              </>
-            ) : (
-              currentStep === 4 ? "Finish" : "Continue"
-            )}
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

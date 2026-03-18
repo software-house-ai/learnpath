@@ -24,7 +24,7 @@ const difficultyConfig: Record<GoalDifficulty, { label: string; className: strin
 }
 
 interface Props {
-  onSelect: (goalId: string) => void
+  onSelect: (goalId: string, goalTitle?: string) => void
   selectedGoalId: string | null
 }
 
@@ -89,7 +89,7 @@ export default function GoalSelector({ onSelect, selectedGoalId }: Props) {
           return (
             <button
               key={goal.id}
-              onClick={() => onSelect(goal.id)}
+              onClick={() => onSelect(goal.id, goal.title)}
               className={`text-left rounded-lg border bg-white shadow-sm p-5 transition-all hover:shadow-md ${
                 isSelected ? "ring-2 ring-blue-500 border-blue-500" : "hover:border-gray-300"
               }`}
