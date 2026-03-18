@@ -159,6 +159,16 @@ export default function PlayerPage() {
     return <div className="flex h-screen items-center justify-center"><p>Content not found</p></div>
   }
 
+  const isVideo = content.content_type === "video" || content.provider?.toLowerCase() === "youtube" || content.url?.includes("youtube.com") || content.url?.includes("youtu.be")
+  let finalEmbedUrl = content.embed_url
+  if (!finalEmbedUrl && content.url) {
+    if (content.url.includes("youtube.com/watch?v=")) {
+      finalEmbedUrl = content.url.replace("watch?v=", "embed/").split("&")[0]
+    } else if (content.url.includes("youtu.be/")) {
+      finalEmbedUrl = content.url.replace("youtu.be/", "youtube.com/embed/").split("?")[0]
+    }
+  }
+
   const currentIndex = moduleContentList.findIndex(c => c.id === contentId) + 1
   const totalInModule = moduleContentList.length || 1
   const prevContentId = currentIndex > 1 ? moduleContentList[currentIndex - 2]?.id : null
@@ -169,9 +179,9 @@ export default function PlayerPage() {
       <div className="flex flex-1 overflow-hidden pb-16">
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-4xl mx-auto">
-            {content.content_type === "video" && content.embed_url ? (
+            {isVideo && finalEmbedUrl ? (
               <VideoEmbed
-                embedUrl={content.embed_url}
+                embedUrl={finalEmbedUrl}
                 durationMinutes={content.duration_minutes || 0}
                 initialPositionSeconds={content.user_progress?.last_position_seconds || 0}
                 onProgressUpdate={handleProgressUpdate}

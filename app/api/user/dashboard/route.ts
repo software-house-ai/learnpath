@@ -66,14 +66,12 @@ export async function GET() {
         const completionPercent = total > 0 ? (completed / total) * 100 : 0
 
         // Find next module
-        const { data: nextModuleData } = await supabase
+        const { data: activeModules } = await supabase
           .from("path_modules")
           .select("id, title, status")
           .eq("path_id", path.id)
           .in("status", ["available", "in_progress"])
           .order("module_order", { ascending: true })
-          .limit(1)
-          .maybeSingle()
 
         let nextContent: {
           id: string
@@ -81,40 +79,64 @@ export async function GET() {
           thumbnail_url: string | null
           duration_minutes: number | null
           module_title: string
+          module_id: string
         } | null = null
 
-        if (nextModuleData) {
-          const nm = nextModuleData as { id: string; title: string }
+        if (activeModules && activeModules.length > 0) {
+          for (const mod of activeModules) {
+            const { data: assignments } = await supabase
+              .from("path_content_assignments")
+              .select(`
+                content_item_id,
+                order_in_module,
+                content_items (
+                  id, title, thumbnail_url, duration_minutes
+                )
+              `)
+              .eq("path_module_id", mod.id)
+              .order("order_in_module", { ascending: true })
 
-          const { data: assignment } = await supabase
-            .from("path_content_assignments")
-            .select("content_item_id")
-            .eq("path_module_id", nm.id)
-            .order("order_in_module", { ascending: true })
-            .limit(1)
-            .maybeSingle()
+            if (!assignments || assignments.length === 0) {
+              // Skip empty modules
+              continue
+            }
 
-          if (assignment) {
-            const { data: contentItem } = await supabase
-              .from("content_items")
-              .select("id, title, thumbnail_url, duration_minutes")
-              .eq("id", (assignment as { content_item_id: string }).content_item_id)
-              .single()
+            const { data: progresses } = await supabase
+              .from("user_progress")
+              .select("content_item_id, status")
+              .eq("user_id", user.id)
+              .in("content_item_id", assignments.map((a: { content_item_id: string }) => a.content_item_id))
 
-            if (contentItem) {
-              const ci = contentItem as {
-                id: string
-                title: string
-                thumbnail_url: string | null
-                duration_minutes: number | null
+            const progressMap = new Map((progresses || []).map((p: { content_item_id: string, status: string }) => [p.content_item_id, p]))
+
+            let nextAssignment = null
+            for (const a of assignments) {
+              const p = progressMap.get((a as { content_item_id: string }).content_item_id)
+              if (!p || p.status !== "completed") {
+                nextAssignment = a
+                break
               }
+            }
+
+            // If all contents are completed but module is still active, point to the last item for checkpoint
+            if (!nextAssignment && assignments.length > 0) {
+               nextAssignment = assignments[assignments.length - 1]
+            }
+
+            if (nextAssignment && (nextAssignment as { content_items?: unknown }).content_items) {
+              type ContentItemPayload = { id: string; title: string; thumbnail_url: string | null; duration_minutes: number | null }
+              const rawItems = (nextAssignment as { content_items: ContentItemPayload | ContentItemPayload[] }).content_items
+              const ci = Array.isArray(rawItems) ? rawItems[0] : rawItems
+                
               nextContent = {
                 id: ci.id,
                 title: ci.title,
                 thumbnail_url: ci.thumbnail_url,
                 duration_minutes: ci.duration_minutes,
-                module_title: nm.title,
+                module_title: mod.title,
+                module_id: mod.id,
               }
+              break
             }
           }
         }

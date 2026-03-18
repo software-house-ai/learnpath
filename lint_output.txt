@@ -1,6 +1,0 @@
-
-> learnpath@0.1.0 lint
-> eslint app components lib --no-error-on-unmatched-pattern
-
-Terminate batch job (Y/N)? Terminate batch job (Y/N)? 
-^C

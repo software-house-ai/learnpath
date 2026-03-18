@@ -37,18 +37,18 @@ export default function VideoEmbed({
   useEffect(() => {
     if (!isActive) return
     const timer = setInterval(() => {
-      setSecondsWatched((prev) => {
-        const next = prev + 1
-        if (next % 30 === 0) {
-          const totalSeconds = (durationMinutes || 10) * 60
-          const percent = Math.min((next / totalSeconds) * 100, 100)
-          onProgressUpdate(percent, next)
-        }
-        return next
-      })
+      setSecondsWatched((prev) => prev + 1)
     }, 1000)
     return () => clearInterval(timer)
-  }, [isActive, durationMinutes, onProgressUpdate])
+  }, [isActive])
+
+  useEffect(() => {
+    if (secondsWatched > initialPositionSeconds && secondsWatched % 30 === 0) {
+      const totalSeconds = (durationMinutes || 10) * 60
+      const percent = Math.min((secondsWatched / totalSeconds) * 100, 100)
+      onProgressUpdate(percent, secondsWatched)
+    }
+  }, [secondsWatched, durationMinutes, onProgressUpdate, initialPositionSeconds])
 
   const handleMarkComplete = () => {
     onProgressUpdate(100, secondsWatched)

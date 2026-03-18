@@ -9,6 +9,7 @@ interface DashboardData {
       thumbnail_url: string | null
       duration_minutes: number | null
       module_title: string
+      module_id?: string
     } | null
   }>
 }
@@ -47,7 +48,7 @@ export function NextUpCard({ nextContent, pathId, moduleId }: NextUpCardProps) {
         </div>
       </div>
       <Link
-        href={`/paths/${pathId}/learn/${moduleId || 'module'}/${nextContent.id}`}
+        href={`/paths/${pathId}/learn/${moduleId || nextContent.module_id || ''}/${nextContent.id}`}
         className="mt-4 w-full block text-center bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700"
       >
         Start Learning →

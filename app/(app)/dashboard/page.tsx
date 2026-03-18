@@ -18,6 +18,7 @@ interface DashboardData {
       thumbnail_url: string | null
       duration_minutes: number | null
       module_title: string
+        module_id: string
     } | null
   }>
   streak: {
@@ -94,6 +95,7 @@ export default function DashboardPage() {
           <NextUpCard
             nextContent={dashboardData.active_paths[0]?.next_content || null}
             pathId={dashboardData.active_paths[0]?.path_id || ""}
+            moduleId={dashboardData.active_paths[0]?.next_content?.module_id || ""}
           />
         </div>
 

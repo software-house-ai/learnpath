@@ -86,7 +86,7 @@ export async function evaluateCheckpoint(
   if (passed) {
     await supabase
       .from("path_modules")
-      .update({ checkpoint_passed: true })
+      .update({ checkpoint_passed: true, status: "completed" })
       .eq("id", pathModuleId)
 
     const { data: currentModule } = await supabase

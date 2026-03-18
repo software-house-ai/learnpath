@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
     const streakWasAlreadyUpdatedToday =
       prevStreak.last_activity_date === today
 
+    if (path_module_id === 'module') return NextResponse.json({}, { status: 200 });
     const updatedRow = await updateProgress(supabase, user.id, {
       content_item_id,
       progress_percent,
