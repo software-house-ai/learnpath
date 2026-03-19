@@ -39,13 +39,14 @@ interface RoadmapTimelineProps {
 
 export function RoadmapTimeline({ pathId, modules }: RoadmapTimelineProps) {
   const router = useRouter()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingModuleId, setLoadingModuleId] = useState<string | null>(null)
 
   // Group modules by week
-  const modulesByWeek = modules.reduce((acc, module) => {
-    const week = module.week_number
+  const modulesByWeek = modules.reduce((acc, pathModule) => {
+    const week = pathModule.week_number
     if (!acc[week]) acc[week] = []
-    acc[week].push(module)
+    acc[week].push(pathModule)
     return acc
   }, {} as Record<number, Module[]>)
 
@@ -76,9 +77,9 @@ export function RoadmapTimeline({ pathId, modules }: RoadmapTimelineProps) {
 
   const handleStart = (moduleId: string) => {
     // Navigate to first content item in module
-    const module = modules.find(m => m.id === moduleId)
-    if (module?.content_assignments[0]) {
-      const firstContent = module.content_assignments[0].content_item
+    const pathModule = modules.find(m => m.id === moduleId)
+    if (pathModule?.content_assignments[0]) {
+      const firstContent = pathModule.content_assignments[0].content_item
       router.push(`/paths/${pathId}/learn/${moduleId}/${firstContent.id}`)
     }
   }
@@ -95,19 +96,19 @@ export function RoadmapTimeline({ pathId, modules }: RoadmapTimelineProps) {
           </div>
 
           <div className="ml-6 border-l-2 border-gray-200 pl-6 space-y-4">
-            {modulesByWeek[weekNum].map(module => (
+            {modulesByWeek[weekNum].map(pathModule => (
               <ModuleCard
-                key={module.id}
-                id={module.id}
-                skillName={module.skill.name}
-                status={module.status as ModuleStatus}
-                estimatedHours={module.skill.estimated_hours}
-                contentCount={module.content_assignments.length}
-                contentItems={module.content_assignments.map(ca => ca.content_item)}
-                unlockCondition={module.unlock_condition}
-                checkpointPassed={module.checkpoint_passed}
-                onSkip={() => handleSkip(module.id, module.status)}
-                onStart={() => handleStart(module.id)}
+                key={pathModule.id}
+                id={pathModule.id}
+                skillName={pathModule.skill.name}
+                status={pathModule.status as ModuleStatus}
+                estimatedHours={pathModule.skill.estimated_hours}
+                contentCount={pathModule.content_assignments.length}
+                contentItems={pathModule.content_assignments.map(ca => ca.content_item)}
+                unlockCondition={pathModule.unlock_condition}
+                checkpointPassed={pathModule.checkpoint_passed}
+                onSkip={() => handleSkip(pathModule.id, pathModule.status)}
+                onStart={() => handleStart(pathModule.id)}
               />
             ))}
           </div>

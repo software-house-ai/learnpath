@@ -32,7 +32,6 @@ interface ModuleCardProps {
 }
 
 export function ModuleCard({
-  id,
   skillName,
   status,
   estimatedHours,
@@ -46,7 +45,6 @@ export function ModuleCard({
   const [isExpanded, setIsExpanded] = useState(false)
 
   const isLocked = status === "locked"
-  const isCompleted = status === "completed"
   const isSkipped = status === "skipped"
   const isAvailable = status === "available" || status === "in_progress"
 

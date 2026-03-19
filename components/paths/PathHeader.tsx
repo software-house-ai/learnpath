@@ -39,7 +39,7 @@ export function PathHeader({
         </div>
         <Progress value={completionPercent} className="h-3" />
         <p className="text-sm text-gray-600">
-          At this pace, you'll finish by <span className="font-semibold">{formattedDate}</span>
+          At this pace, you&apos;ll finish by <span className="font-semibold">{formattedDate}</span>
         </p>
       </div>
     </div>

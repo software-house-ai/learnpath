@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { ApiSuccess, ApiError } from "@/types/api"
@@ -40,8 +41,8 @@ export async function POST(
       .select("skill_id, assessed_level")
       .eq("user_id", user.id)
 
-    const assessmentResults = assessments?.reduce((acc: Record<string, string>, a) => {
-      acc[a.skill_id] = a.assessed_level
+    const assessmentResults = assessments?.reduce((acc: Record<string, import("@/types/api").AssessedLevel>, a) => {
+      acc[a.skill_id] = a.assessed_level as import("@/types/api").AssessedLevel
       return acc
     }, {}) || {}
 
