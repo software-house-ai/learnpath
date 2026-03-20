@@ -58,12 +58,18 @@ export async function POST(
       : 7
 
     // Archive old path
-    await supabase
+    console.log("Archiving old path:", id)
+    const { error: updateError } = await supabase
       .from("paths")
       .update({ status: "abandoned" })
       .eq("id", id)
+      
+    if (updateError) {
+      console.error("Failed to archive path:", updateError)
+    }
 
     // Generate new path
+    console.log("Generating new path for user:", user.id)
     const result = await generatePath({
       user_id: user.id,
       goal_id: existingPath.goal_id,

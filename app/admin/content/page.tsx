@@ -119,6 +119,7 @@ export default function ContentAdminPage() {
     if (item) {
       setEditingItem(item)
       // Omit array fields like 'tags' from formData since formData expects primitive values
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { tags, ...rest } = item
       setFormData(rest as unknown as Record<string, string | number | boolean | null>)
       setFormTags(item.tags ? item.tags.join(', ') : '')

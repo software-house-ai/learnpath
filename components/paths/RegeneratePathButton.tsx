@@ -21,8 +21,13 @@ export function RegeneratePathButton({ pathId }: RegeneratePathButtonProps) {
       })
 
       if (res.ok) {
-        // Refresh the page data
-        router.refresh()
+        const data = await res.json()
+        const newPathId = data.data?.id || data.data?.path_id
+        if (newPathId) {
+          router.push(`/paths/${newPathId}`)
+        } else {
+          router.push(`/paths`)
+        }
       } else {
         console.error("Failed to regenerate path")
         // Optionally handle and display error to the user
