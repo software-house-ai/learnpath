@@ -36,11 +36,11 @@ export function GoalCard({ goal }: GoalCardProps) {
         <Badge
           className="mb-2"
           style={{
-            backgroundColor: `${goal.domain.color_hex}20`,
-            color: goal.domain.color_hex
+            backgroundColor: `${(goal.domain as Record<string, unknown>)?.color_hex as string || '#3b82f6'}20`,
+            color: (goal.domain as Record<string, unknown>)?.color_hex as string || '#3b82f6'
           }}
         >
-          {goal.domain.name}
+          {(goal.domain as Record<string, unknown>)?.name as string || 'Unknown'}
         </Badge>
         <h3 className="text-xl font-bold mb-2">{goal.title}</h3>
         <p className="text-gray-600 text-sm line-clamp-2">{goal.description}</p>

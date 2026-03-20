@@ -78,6 +78,8 @@ export type ApiSuccess<T> = {
     total?: number
     page?: number
     limit?: number
+    totalPages?: number
+    query?: string
   }
 }
 
